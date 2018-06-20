@@ -20,6 +20,10 @@ function mockContext(createIssue) {
   };
 }
 
+function mockCreateIssue(params) {
+  return params;
+}
+
 const yamlError = {
   name: 'YAMLException',
   reason: 'incomplete explicit mapping pair; a key node is missed; or followed by a non-tabulatedempty line',
@@ -33,12 +37,7 @@ const yamlError = {
   message: 'incomplete explicit mapping pair; a key node is missed; or followed by a non-tabulated empty line at line 1, column 19:\n    welcome: [invalid]: yaml\n                      ^',
 };
 
-function mockCreateIssue(params) {
-  return params;
-}
-
-
-test('throws on error', async () => {
+test('Should create an issue on the repo with provided title comment ', async () => {
   const issueText = {
     title: 'default title',
     comment: 'An error occured loading the config',
