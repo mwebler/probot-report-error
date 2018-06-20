@@ -1,0 +1,37 @@
+{
+  "name": "probot-report-error",
+  "version": "0.0.1",
+  "description": "An issue reporter for probot",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "fix": "eslint --fix .",
+    "lint": "eslint .",
+    "test": "eslint . && jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mwebler/probot-report-error.git"
+  },
+  "keywords": [
+    "probot",
+    "error",
+    "issue",
+    "reporter",
+    "config"
+  ],
+  "author": "Matheus Webler",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mwebler/probot-report-error/issues"
+  },
+  "homepage": "https://github.com/mwebler/probot-report-error#readme",
+  "devDependencies": {
+    "eslint": "^4.19.1",
+    "eslint-config-airbnb-base": "^12.1.0",
+    "eslint-plugin-import": "^2.12.0",
+    "jest": "^23.1.0"
+  }
+}
