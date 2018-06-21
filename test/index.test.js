@@ -25,20 +25,14 @@ function mockPaginatingIssueList(params, issueList) {
   return Promise.resolve({ data: list });
 }
 
-function mockContext(createIssue, getAllIssues) {
+function mockGithub(createIssue, getAllIssues) {
   return {
-    repo(params) {
-      return Object.assign(sampleRepo, params);
-    },
-
-    github: {
-      issues: {
-        async create(params) {
-          return createIssue(params);
-        },
-        async getForRepo(params, issueListMock) {
-          return getAllIssues(params, issueListMock);
-        },
+    issues: {
+      async create(params) {
+        return createIssue(params);
+      },
+      async getForRepo(params, issueListMock) {
+        return getAllIssues(params, issueListMock);
       },
     },
   };
@@ -56,16 +50,17 @@ test('Should create an issue on the repo with provided title and body', async ()
 
   const spy = jest.fn().mockImplementation(params => mockCreateIssue(params));
   const getSpy = jest.fn().mockImplementation(params => mockPaginatingIssueList(params, []));
+  const mockConfig = Object.assign({ github: mockGithub(spy, getSpy) }, sampleRepo);
 
   const reporter = new IssueReporter();
-  const result = await reporter.createIssue(mockContext(spy, getSpy), issueText);
+  const result = await reporter.createIssue(mockConfig, issueText);
 
   const expectedIssue = {
     title: issueText.title,
     body: `${issueText.body}\n\n\`\`\`\n${issueText.error}\n\`\`\`\n\n${issueText.footer}`,
   };
   expect(spy).toHaveBeenCalledTimes(1);
-  expect(spy).toHaveBeenCalledWith(Object.assign(expectedIssue, sampleRepo));
+  expect(spy).toHaveBeenCalledWith(Object.assign({}, expectedIssue, sampleRepo));
   expect({ data: expectedIssue }).toMatchObject(result);
 });
 
@@ -78,9 +73,10 @@ test('Should not create duplicated issues (with same title)', async () => {
   const mockImplementation = jest.fn().mockImplementation(params => mockCreateIssue(params));
   const getSpy =
     jest.fn().mockImplementation(params => mockPaginatingIssueList(params, simpleIssueList));
+  const mockConfig = Object.assign({ github: mockGithub(mockImplementation, getSpy) }, sampleRepo);
 
   const reporter = new IssueReporter();
-  await reporter.createIssue(mockContext(mockImplementation, getSpy), issueText);
+  await reporter.createIssue(mockConfig, issueText);
 
   // Should make the call to get all issues
   expect(getSpy).toHaveBeenCalledTimes(1);
@@ -92,7 +88,9 @@ test('Should iterate correctly on issues pages', async () => {
   expect.assertions(2);
   const spy =
     jest.fn().mockImplementation(params => mockPaginatingIssueList(params, longIssueList));
-  const result = await IssueReporter.checkOpenIssues(mockContext(null, spy), 'any title, just want to iterate all the list');
+  const mockConfig = Object.assign({ github: mockGithub(null, spy) }, sampleRepo);
+
+  const result = await IssueReporter.checkOpenIssues(mockConfig, 'any title, just want to iterate all the list');
 
   // Should make 3 requests to github api
   expect(spy).toHaveBeenCalledTimes(3);
@@ -103,7 +101,9 @@ test('Should disregard pull requests', async () => {
   expect.assertions(1);
   const spy =
     jest.fn().mockImplementation(params => mockPaginatingIssueList(params, listWithPullRequest));
-  const result = await IssueReporter.checkOpenIssues(mockContext(null, spy), 'An error has occurred in the app');
+  const mockConfig = Object.assign({ github: mockGithub(null, spy) }, sampleRepo);
+
+  const result = await IssueReporter.checkOpenIssues(mockConfig, 'An error has occurred in the app');
 
   expect(result).toBeFalsy();
 });
@@ -124,7 +124,7 @@ test('Should create an issue body using the default values if none is provided',
 });
 
 test('Should throw when trying to create an issue without title', async () => {
-  expect.assertions(1);
+  expect.assertions(2);
 
   const defaults = {
     footer: 'default footer',
@@ -133,8 +133,9 @@ test('Should throw when trying to create an issue without title', async () => {
   const reporter = new IssueReporter(defaults);
 
   try {
-    await reporter.createIssue();
+    await reporter.createIssue(Object.assign({ github: mockGithub }, sampleRepo));
   } catch (error) {
     expect(error).toBeInstanceOf(Error);
+    expect(error.message).toBe('A title is required for creating an issue');
   }
 });

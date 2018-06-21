@@ -21,9 +21,13 @@ class IssueReporter {
     this.defaults = Object.assign({}, defaults);
   }
 
+
   /**
    * Create an issue in the repository with the defined title and body
-   * @param {Context} context A Probot context
+   * @param {Object} config - Github context and config
+   * @param {Object} config.github - An octokit object
+   * @param {Object} config.owner - Repository owner
+   * @param {Object} config.repo - Repository
    * @param {Object} texts - The texts to be used in the issue.
    *    If not provided, the defaults are used.
    * @param {string=} texts.title - Issue title.
@@ -34,7 +38,7 @@ class IssueReporter {
    * @returns {Object} Issue creation result or null, if it wasn't created
    * @async
   */
-  async createIssue(context, {
+  async createIssue({ github, owner, repo }, {
     title, body, error, footer,
   } = {}) {
     const issueTexts = {
@@ -46,15 +50,17 @@ class IssueReporter {
       throw new Error('A title is required for creating an issue');
     }
 
-    const issue = context.repo(issueTexts);
-
     // Just create a new issue if there is not an open issue with same title
-    const issueExists = await IssueReporter.checkOpenIssues(context, issueTexts.title);
+    const issueExists =
+        await IssueReporter.checkOpenIssues({ github, owner, repo }, issueTexts.title);
+
     if (!issueExists) {
-      return context.github.issues.create(issue);
+      const issue = Object.assign(issueTexts, { owner, repo });
+      return github.issues.create(issue);
     }
     return null;
   }
+
 
   /**
    * Create an issue body with body message, error and a footer
@@ -79,20 +85,29 @@ class IssueReporter {
     return bodyLines.join('\n\n');
   }
 
+
   /**
    * Check if an issue already exists with same title
-   * @param {Object} context - A Probot context
+   * @param {Object} config - Github context and config
+   * @param {Object} config.github - An octokit object
+   * @param {Object} config.owner - Repository owner
+   * @param {Object} config.repo - Repository
    * @param {string} title - The title of the issue to find
    * @returns {boolean} True if an issue with same title was found
    * @async  @static
   */
-  static async checkOpenIssues(context, title) {
+  static async checkOpenIssues({ github, owner, repo }, title) {
     let currentPage = 1;
     let lastPage = false;
     while (!lastPage) {
-      const result = await context.github.issues.getForRepo(context.repo({
-        state: 'open', per_page: 100, page: currentPage,
-      }));
+      const params = {
+        owner,
+        repo,
+        state: 'open',
+        per_page: 100,
+        page: currentPage,
+      };
+      const result = await github.issues.getForRepo(params);
       const issues = result.data;
 
       // For now, compare just the title and ignore pull requests
