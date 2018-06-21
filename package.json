@@ -9,7 +9,7 @@
   "scripts": {
     "fix": "eslint --fix .",
     "lint": "eslint .",
-    "test": "eslint . && jest --coverage"
+    "test": "eslint . && jest --coverage --coverageReporters=text"
   },
   "repository": {
     "type": "git",
