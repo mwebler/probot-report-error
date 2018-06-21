@@ -33,8 +33,10 @@ try{
 }
 ```
 
+> Note that your Github app msut have Read & Write access to repository  issues
 
-### A note on parameters
+
+### Parameters
 For both `constructor` and `createIssue` methods you can specify the issue title, body, error and footer texts. 
 
 Only the **title is required** to be set either in the constructor with a default value or when creating an issue.
