@@ -16,6 +16,7 @@ function mockCreateIssue(params) {
 
 const simpleIssueList = [{ title: 'new issue' }, { title: 'default title' }];
 const longIssueList = [...Array(234)].map((x, i) => ({ title: `issue ${i}` }));
+const listWithPullRequest = [{ title: 'An error has occurred in the app', pull_request: {} }, { title: 'second issue' }];
 
 function mockPaginatingIssueList(params, issueList) {
   const startIndex = (params.page - 1) * params.per_page;
@@ -95,6 +96,15 @@ test('Should iterate correctly on issues pages', async () => {
 
   // Should make 3 requests to github api
   expect(spy).toHaveBeenCalledTimes(3);
+  expect(result).toBeFalsy();
+});
+
+test('Should disregard pull requests', async () => {
+  expect.assertions(1);
+  const spy =
+    jest.fn().mockImplementation(params => mockPaginatingIssueList(params, listWithPullRequest));
+  const result = await IssueReporter.checkOpenIssues(mockContext(null, spy), 'An error has occurred in the app');
+
   expect(result).toBeFalsy();
 });
 

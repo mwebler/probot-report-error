@@ -79,8 +79,8 @@ class IssueReporter {
       }));
       const issues = result.data;
 
-      // For now, compare just the title
-      const issue = issues.find(i => i.title === title);
+      // For now, compare just the title and ignore pull requests
+      const issue = issues.find(i => (i.title === title && !i.pull_request));
       if (typeof issue !== 'undefined') {
         return true;
       }
