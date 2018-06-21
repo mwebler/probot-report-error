@@ -34,7 +34,7 @@ class IssueReporter {
   */
   async createIssue(context, {
     title, body, error, footer,
-  }) {
+  } = {}) {
     const issueTexts = {
       title: title || this.defaults.title,
       body: this.createIssueBody(body, error, footer),

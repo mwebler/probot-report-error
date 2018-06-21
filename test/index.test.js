@@ -123,7 +123,7 @@ test('Should throw when trying to create an issue without title', async () => {
   const reporter = new IssueReporter(defaults);
 
   try {
-    await reporter.createIssue({}, {});
+    await reporter.createIssue();
   } catch (error) {
     expect(error).toBeInstanceOf(Error);
   }
