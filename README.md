@@ -19,18 +19,18 @@ const configIssueReporter = new IssueReporter({
 
 Create a new issue with **optional** body, error or footer:
 ```js
-	try{
-		config = await getConfig(context, 'config.yml') // Trying to load config file
-	} catch(error){
-		const result =
-				await configIssueReporter.createIssue(context.repo({github: context.github}), {error});
-		if(result){
-			console.log('Issue created!');
-		}
-		else {
-			console.log('Issue already exists on repo')
-		}
-	}
+try{
+  config = await getConfig(context, 'config.yml') // Trying to load config file
+} catch(error){
+  const result =
+      await configIssueReporter.createIssue(context.repo({github: context.github}), {error});
+  if(result){
+    console.log('Issue created!');
+  }
+  else {
+    console.log('Issue already exists on repo')
+  }
+}
 ```
 
 
