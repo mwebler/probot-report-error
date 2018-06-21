@@ -68,7 +68,7 @@ class IssueReporter {
   }
 
   static async checkOpenIssues(context, title) {
-    const currentPage = 1;
+    let currentPage = 1;
     let lastPage = false;
     while (!lastPage) {
       const result = await context.github.issues.getForRepo(context.repo({
@@ -85,6 +85,8 @@ class IssueReporter {
       if (issues.length < 100) {
         lastPage = true;
       }
+
+      currentPage += 1;
     }
     return false;
   }

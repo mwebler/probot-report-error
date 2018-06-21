@@ -4,6 +4,26 @@ const IssueReporter = require('../index');
 
 const sampleRepo = { owner: 'owner', repo: 'repo' };
 
+function mockCreateIssue(params) {
+  // Return just the title and the body for now...
+  return {
+    data: {
+      title: params.title,
+      body: params.body,
+    },
+  };
+}
+
+const simpleIssueList = [{ title: 'new issue' }, { title: 'default title' }];
+const longIssueList = [...Array(234)].map((x, i) => ({ title: `issue ${i}` }));
+
+function mockPaginatingIssueList(params, issueList) {
+  const startIndex = (params.page - 1) * params.per_page;
+  const endIndex = params.page * params.per_page;
+  const list = issueList.slice(startIndex, endIndex);
+  return Promise.resolve({ data: list });
+}
+
 function mockContext(createIssue, getAllIssues) {
   return {
     repo(params) {
@@ -15,39 +35,11 @@ function mockContext(createIssue, getAllIssues) {
         async create(params) {
           return createIssue(params);
         },
-        async getForRepo(params) {
-          return getAllIssues(params);
+        async getForRepo(params, issueListMock) {
+          return getAllIssues(params, issueListMock);
         },
       },
     },
-  };
-}
-
-function mockCreateIssue(params) {
-  // Return just the title and the body for now...
-  return {
-    data: {
-      title: params.title,
-      body: params.body,
-    },
-  };
-}
-
-function emptyIssueListMock() {
-  return {
-    data: [],
-  };
-}
-
-function mockSimpleIssueList() {
-  // We currently just check the title
-  return {
-    data: [{
-      title: 'new issue',
-    },
-    {
-      title: 'default title',
-    }],
   };
 }
 
@@ -75,8 +67,9 @@ test('Should create an issue on the repo with provided title comment', async () 
   const reporter = new IssueReporter();
 
   expect.assertions(3);
-  const spy = jest.fn().mockImplementationOnce(params => mockCreateIssue(params));
-  const result = await reporter.createIssue(mockContext(spy, emptyIssueListMock), issueText);
+  const spy = jest.fn().mockImplementation(params => mockCreateIssue(params));
+  const getSpy = jest.fn().mockImplementation(params => mockPaginatingIssueList(params, []));
+  const result = await reporter.createIssue(mockContext(spy, getSpy), issueText);
   const expectedIssue = {
     title: issueText.title,
     body: `${issueText.comment}\n\n\`\`\`\n${issueText.error}\n\`\`\`\n\n${issueText.footer}`,
@@ -89,20 +82,29 @@ test('Should create an issue on the repo with provided title comment', async () 
 test('Should not create duplicated issues (with same title)', async () => {
   const issueText = {
     title: 'default title',
-    comment: 'An error occured loading the config',
-    error: yamlError.message,
-    footer: 'default footer',
   };
 
   const reporter = new IssueReporter();
 
   expect.assertions(2);
-  const createSpy = jest.fn().mockImplementation(params => mockCreateIssue(params));
-  const getSpy = jest.fn().mockImplementation(params => mockSimpleIssueList(params));
-  await reporter.createIssue(mockContext(createSpy, getSpy), issueText);
+  const mockImplementation = jest.fn().mockImplementation(params => mockCreateIssue(params));
+  const getSpy =
+    jest.fn().mockImplementation(params => mockPaginatingIssueList(params, simpleIssueList));
+  await reporter.createIssue(mockContext(mockImplementation, getSpy), issueText);
 
   // Should make the call to get all issues
   expect(getSpy).toHaveBeenCalledTimes(1);
   // But not the call to create
-  expect(createSpy).toHaveBeenCalledTimes(0);
+  expect(mockImplementation).toHaveBeenCalledTimes(0);
+});
+
+test('Should iterate correctly on issues pages', async () => {
+  expect.assertions(2);
+  const spy =
+    jest.fn().mockImplementation(params => mockPaginatingIssueList(params, longIssueList));
+  const result = await IssueReporter.checkOpenIssues(mockContext(null, spy), 'any title, just want to iterate all the list');
+
+  // Should make 3 requests to github api
+  expect(spy).toHaveBeenCalledTimes(3);
+  expect(result).toBeFalsy();
 });
