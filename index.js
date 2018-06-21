@@ -22,6 +22,7 @@ class IssueReporter {
   }
 
   /**
+   * Create an issue in the repository with the defined title and body
    * @param {Context} context A Probot context
    * @param {Object} texts - The texts to be used in the issue.
    *    If not provided, the defaults are used.
@@ -30,6 +31,7 @@ class IssueReporter {
    * @param {string=} texts.body - Issue body
    * @param {string=} texts.error - Error to be reported
    * @param {string=} texts.footer - Footer information
+   * @returns {Object} Issue creation result or null, if it wasn't created
    * @async
   */
   async createIssue(context, {
@@ -54,6 +56,13 @@ class IssueReporter {
     return null;
   }
 
+  /**
+   * Create an issue body with body message, error and a footer
+   * @param {string=} body - Issue body
+   * @param {string=} error - Error to be reported
+   * @param {string=} footer - Footer information
+   * @returns {string} An issue body in the specified format
+  */
   createIssueBody(body, error, footer) {
     const bodyLines = [];
     if (body || this.defaults.body) {
@@ -70,6 +79,13 @@ class IssueReporter {
     return bodyLines.join('\n\n');
   }
 
+  /**
+   * Check if an issue already exists with same title
+   * @param {Object} context - A Probot context
+   * @param {string} title - The title of the issue to find
+   * @returns {boolean} True if an issue with same title was found
+   * @async
+  */
   static async checkOpenIssues(context, title) {
     let currentPage = 1;
     let lastPage = false;
