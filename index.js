@@ -1,11 +1,9 @@
-const GENERIC_TITLE = 'Error loading the app';
-
 /** A github configuration issue reporter
  * It creates an issue in the repository like:
  *
  * **{Title} - Error loading app configuration**
  *
- * {Comment} - An error occurred loading your configuration.
+ * {body} - An error occurred loading your configuration.
  *
  * {Error} - ```YAMLException: bad indentation```
  *
@@ -15,7 +13,7 @@ class IssueReporter {
   /**
    * @param {Object} defaults - The default texts to be used when creating an issue
    * @param {string=} defaults.title - Default issue title
-   * @param {string=} defaults.comment - Default issue comment
+   * @param {string=} defaults.body - Default issue body
    * @param {string=} defaults.error - Default error to be reported
    * @param {string=} defaults.footer - Default footer information
   */
@@ -28,19 +26,24 @@ class IssueReporter {
    * @param {Object} texts - The texts to be used in the issue.
    *    If not provided, the defaults are used.
    * @param {string=} texts.title - Issue title.
-   *    If not provided and no default exists, use a generic title
-   * @param {string=} texts.comment - Issue comment
+   *    If not provided and no default exists an error will be thrown
+   * @param {string=} texts.body - Issue body
    * @param {string=} texts.error - Error to be reported
    * @param {string=} texts.footer - Footer information
    * @async
   */
   async createIssue(context, {
-    title, comment, error, footer,
+    title, body, error, footer,
   }) {
     const issueTexts = {
-      title: title || this.defaults.title || GENERIC_TITLE,
-      body: this.createIssueBody(comment, error, footer),
+      title: title || this.defaults.title,
+      body: this.createIssueBody(body, error, footer),
     };
+
+    if (!issueTexts.title) {
+      throw new Error('A title is required for creating an issue');
+    }
+
     const issue = context.repo(issueTexts);
 
     // Just create a new issue if there is not an open issue with same title
@@ -51,10 +54,10 @@ class IssueReporter {
     return null;
   }
 
-  createIssueBody(comment, error, footer) {
+  createIssueBody(body, error, footer) {
     const bodyLines = [];
-    if (comment || this.defaults.comment) {
-      bodyLines.push(comment || this.defaults.comment);
+    if (body || this.defaults.body) {
+      bodyLines.push(body || this.defaults.body);
     }
     if (error || this.defaults.error) {
       // Format the error in markdown with ```

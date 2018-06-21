@@ -43,36 +43,25 @@ function mockContext(createIssue, getAllIssues) {
   };
 }
 
-const yamlError = {
-  name: 'YAMLException',
-  reason: 'incomplete explicit mapping pair; a key node is missed; or followed by a non-tabulatedempty line',
-  mark: {
-    name: null,
-    buffer: 'welcome: [invalid]: yaml\n\u0000',
-    position: 18,
-    line: 0,
-    column: 18,
-  },
-  message: 'incomplete explicit mapping pair; a key node is missed; or followed by a non-tabulated empty line at line 1, column 19:\n    welcome: [invalid]: yaml\n                      ^',
-};
+test('Should create an issue on the repo with provided title and body', async () => {
+  expect.assertions(3);
 
-test('Should create an issue on the repo with provided title comment', async () => {
   const issueText = {
     title: 'default title',
-    comment: 'An error occured loading the config',
-    error: yamlError.message,
+    body: 'An error occured loading the config',
+    error: 'incomplete explicit mapping pair; a key node is missed',
     footer: 'default footer',
   };
 
-  const reporter = new IssueReporter();
-
-  expect.assertions(3);
   const spy = jest.fn().mockImplementation(params => mockCreateIssue(params));
   const getSpy = jest.fn().mockImplementation(params => mockPaginatingIssueList(params, []));
+
+  const reporter = new IssueReporter();
   const result = await reporter.createIssue(mockContext(spy, getSpy), issueText);
+
   const expectedIssue = {
     title: issueText.title,
-    body: `${issueText.comment}\n\n\`\`\`\n${issueText.error}\n\`\`\`\n\n${issueText.footer}`,
+    body: `${issueText.body}\n\n\`\`\`\n${issueText.error}\n\`\`\`\n\n${issueText.footer}`,
   };
   expect(spy).toHaveBeenCalledTimes(1);
   expect(spy).toHaveBeenCalledWith(Object.assign(expectedIssue, sampleRepo));
@@ -80,16 +69,16 @@ test('Should create an issue on the repo with provided title comment', async () 
 });
 
 test('Should not create duplicated issues (with same title)', async () => {
+  expect.assertions(2);
+
   const issueText = {
     title: 'default title',
   };
-
-  const reporter = new IssueReporter();
-
-  expect.assertions(2);
   const mockImplementation = jest.fn().mockImplementation(params => mockCreateIssue(params));
   const getSpy =
     jest.fn().mockImplementation(params => mockPaginatingIssueList(params, simpleIssueList));
+
+  const reporter = new IssueReporter();
   await reporter.createIssue(mockContext(mockImplementation, getSpy), issueText);
 
   // Should make the call to get all issues
@@ -107,4 +96,35 @@ test('Should iterate correctly on issues pages', async () => {
   // Should make 3 requests to github api
   expect(spy).toHaveBeenCalledTimes(3);
   expect(result).toBeFalsy();
+});
+
+test('Should create an issue body using the default values if none is provided', async () => {
+  expect.assertions(1);
+
+  const defaults = {
+    title: 'default title',
+    body: 'An error occured loading the config',
+    error: 'Should we have a default error?',
+    footer: 'default footer',
+  };
+
+  const reporter = new IssueReporter(defaults);
+  const body = reporter.createIssueBody();
+  expect(body).toBe(`${defaults.body}\n\n\`\`\`\n${defaults.error}\n\`\`\`\n\n${defaults.footer}`);
+});
+
+test('Should throw when trying to create an issue without title', async () => {
+  expect.assertions(1);
+
+  const defaults = {
+    footer: 'default footer',
+  };
+
+  const reporter = new IssueReporter(defaults);
+
+  try {
+    await reporter.createIssue({}, {});
+  } catch (error) {
+    expect(error).toBeInstanceOf(Error);
+  }
 });
