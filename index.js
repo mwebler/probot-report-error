@@ -44,10 +44,11 @@ class IssueReporter {
     const issue = context.repo(issueTexts);
 
     // Just create a new issue if there is not an open issue with same title
-    const issueExists = await IssueReporter.openIssueExists(context.github, issueTexts.title);
+    const issueExists = await IssueReporter.checkOpenIssues(context, issueTexts.title);
     if (!issueExists) {
-      await context.github.issues.create(issue);
+      return context.github.issues.create(issue);
     }
+    return null;
   }
 
   createIssueBody(comment, error, footer) {
@@ -66,16 +67,18 @@ class IssueReporter {
     return bodyLines.join('\n\n');
   }
 
-  static async openIssueExists(github, title) {
+  static async checkOpenIssues(context, title) {
     const currentPage = 1;
     let lastPage = false;
     while (!lastPage) {
-      const issues = await github.issues.getAll({
+      const result = await context.github.issues.getForRepo(context.repo({
         state: 'open', per_page: 100, page: currentPage,
-      });
+      }));
+      const issues = result.data;
 
       // For now, compare just the title
-      if (typeof issues.find(i => i.title === title) !== 'undefined') {
+      const issue = issues.find(i => i.title === title);
+      if (typeof issue !== 'undefined') {
         return true;
       }
 

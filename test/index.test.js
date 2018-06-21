@@ -15,7 +15,7 @@ function mockContext(createIssue, getAllIssues) {
         async create(params) {
           return createIssue(params);
         },
-        async getAll(params) {
+        async getForRepo(params) {
           return getAllIssues(params);
         },
       },
@@ -24,11 +24,31 @@ function mockContext(createIssue, getAllIssues) {
 }
 
 function mockCreateIssue(params) {
-  return params;
+  // Return just the title and the body for now...
+  return {
+    data: {
+      title: params.title,
+      body: params.body,
+    },
+  };
 }
 
 function emptyIssueListMock() {
-  return [];
+  return {
+    data: [],
+  };
+}
+
+function mockSimpleIssueList() {
+  // We currently just check the title
+  return {
+    data: [{
+      title: 'new issue',
+    },
+    {
+      title: 'default title',
+    }],
+  };
 }
 
 const yamlError = {
@@ -54,14 +74,16 @@ test('Should create an issue on the repo with provided title comment', async () 
 
   const reporter = new IssueReporter();
 
-  expect.assertions(2);
+  expect.assertions(3);
   const spy = jest.fn().mockImplementationOnce(params => mockCreateIssue(params));
-  await reporter.createIssue(mockContext(spy, emptyIssueListMock), issueText);
-  expect(spy).toHaveBeenCalledTimes(1);
-  expect(spy).toHaveBeenCalledWith(Object.assign({
+  const result = await reporter.createIssue(mockContext(spy, emptyIssueListMock), issueText);
+  const expectedIssue = {
     title: issueText.title,
     body: `${issueText.comment}\n\n\`\`\`\n${issueText.error}\n\`\`\`\n\n${issueText.footer}`,
-  }, sampleRepo));
+  };
+  expect(spy).toHaveBeenCalledTimes(1);
+  expect(spy).toHaveBeenCalledWith(Object.assign(expectedIssue, sampleRepo));
+  expect({ data: expectedIssue }).toMatchObject(result);
 });
 
 test('Should not create duplicated issues (with same title)', async () => {
@@ -76,7 +98,7 @@ test('Should not create duplicated issues (with same title)', async () => {
 
   expect.assertions(2);
   const createSpy = jest.fn().mockImplementation(params => mockCreateIssue(params));
-  const getSpy = jest.fn().mockImplementation(() => [{ title: 'issue 1' }, { title: 'default title' }]);
+  const getSpy = jest.fn().mockImplementation(params => mockSimpleIssueList(params));
   await reporter.createIssue(mockContext(createSpy, getSpy), issueText);
 
   // Should make the call to get all issues
