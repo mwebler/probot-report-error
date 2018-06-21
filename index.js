@@ -1,4 +1,5 @@
 /** A github configuration issue reporter
+ *
  * It creates an issue in the repository like:
  *
  * **{Title} - Error loading app configuration**
