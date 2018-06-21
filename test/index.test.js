@@ -32,7 +32,7 @@ function mockContext(createIssue, getAllIssues) {
     },
 
     github: {
-      issues: { // todo check octokit result formats
+      issues: {
         async create(params) {
           return createIssue(params);
         },

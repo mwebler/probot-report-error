@@ -84,7 +84,7 @@ class IssueReporter {
    * @param {Object} context - A Probot context
    * @param {string} title - The title of the issue to find
    * @returns {boolean} True if an issue with same title was found
-   * @async
+   * @async  @static
   */
   static async checkOpenIssues(context, title) {
     let currentPage = 1;
